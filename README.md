@@ -1,63 +1,68 @@
-# Rapport de Laboratoire 1 : Mise en place de l'environnement d'audit Android (Mobexler)
+# Lab 1 : Mise en place de l'environnement d'analyse Android Mobexler
 
-Ce document détaille la procédure de configuration initiale de l'environnement de laboratoire pour l'audit d'applications Android, basée sur l'image Mobexler.
-
----
-
-## 1. Objectifs du Laboratoire
-L'objectif de ce premier laboratoire est d'établir une base de travail saine et reproductible pour les analyses futures. Les points clés incluent :
-*   Le déploiement de la machine virtuelle Mobexler.
-*   La configuration d'un double adressage réseau (NAT et Host-Only).
-*   La vérification de la connectivité et des outils de débogage (ADB).
-*   La création d'un point de restauration système (Snapshot).
+## Introduction
+Ce rapport documente la configuration initiale et la validation de l'environnement de laboratoire pour l'analyse de sécurité Android. L'objectif principal est de déployer la machine virtuelle Mobexler, de configurer une architecture réseau isolée mais fonctionnelle, et de garantir la reproductibilité des tests via des mécanismes de restauration.
 
 ---
 
-## 2. Étape 1 : Acquisition et Importation de l'image
-L'image au format Open Virtualization Format (OVA) a été téléchargée via le lien officiel. Comme illustré dans le fichier **"Screenshot 2026-05-01 223419_2.png"**, le fichier source est reconnu comme une appliance virtuelle prête à l'import.
-
-### Configuration Matérielle
-L'importation dans VMware Workstation a été effectuée avec les spécifications suivantes, visibles dans le fichier **"Screenshot 2026-05-01 231937_2.png"** :
-*   **Mémoire vive (RAM) :** 4 Go.
-*   **Processeurs :** 2 cœurs.
-*   **Stockage :** Disque dur de 70 Go.
+## 1. Acquisition et Vérification de l'Image
+La première étape consiste à télécharger l'image OVA officielle de Mobexler via le lien Google Drive fourni. 
+*   **Vérification d'intégrité** : Afin d'éviter toute corruption de fichier ou altération malveillante, le calcul du hash SHA256 est préconisé avant l'importation.
+*   **Commandes de contrôle** : L'utilisation de `Get-FileHash` sous Windows ou `sha256sum` sous Linux permet de garantir que l'image utilisée est identique à celle attendue par les mainteneurs du projet.
 
 ---
 
-## 3. Étape 2 : Architecture Réseau
-Pour répondre aux exigences de sécurité et de fonctionnalité, deux cartes réseau ont été configurées :
-1.  **Adaptateur 1 (NAT) :** Fournit un accès stable à Internet pour la mise à jour des outils et le téléchargement de dépendances.
-2.  **Adaptateur 2 (Host-Only) :** Crée un réseau isolé permettant une communication sécurisée entre la VM Mobexler et la cible Android (physique ou émulée) sans exposition au réseau local physique.
+## 2. Importation et Configuration de l'Architecture Réseau
+L'importation a été réalisée sous VMware Workstation, en respectant les spécifications matérielles requises pour une fluidité optimale de l'analyse.
+
+### Spécifications Matérielles de la VM
+Selon le fichier **Screenshot 2026-05-01 223419_2.png**, les ressources suivantes ont été allouées :
+*   **Mémoire (RAM)** : 4 GB.
+*   **Processeurs** : 2 cœurs.
+*   **Disque Dur** : 70 GB (SCSI).
+
+### Segmentation Réseau
+L'environnement repose sur une double interface réseau pour isoler le trafic de laboratoire tout en maintenant un accès aux outils externes :
+1.  **Adaptateur 1 (NAT)** : Fournit une connexion Internet stable pour les mises à jour et le téléchargement d'outils.
+2.  **Adaptateur 2 (Host-Only)** : Crée un réseau privé dédié à la communication sécurisée entre la VM Mobexler et la cible Android.
 
 ---
 
-## 4. Étape 3 : Authentification et Premier Démarrage
-Le système démarre sur un environnement Linux personnalisé. L'accès au bureau s'effectue via les identifiants par défaut :
-*   **Utilisateur :** mobexler.
-*   **Mot de passe :** mobexler.
-
-L'interface de connexion est documentée dans le fichier **"Screenshot 2026-05-02 143728_2.jpg"**.
+## 3. Initialisation du Système et Authentification
+Une fois la machine démarrée, l'accès au bureau s'effectue via l'interface de connexion. 
+*   **Identifiants** : Comme illustré dans le fichier **Screenshot 2026-05-02 143728_2.jpg**, l'utilisateur `mobexler` est utilisé pour l'ouverture de session.
+*   **Environnement** : Le système charge un environnement basé sur Linux optimisé pour le pentest mobile.
 
 ---
 
-## 5. Étape 4 : Tests de Santé et Connectivité
-Une fois la session ouverte, une série de tests a été réalisée dans le terminal pour valider l'environnement (réf. **"Screenshot 2026-05-01 232939_2.png"**) :
+## 4. Tests de Santé et Validation Réseau
+Une phase de diagnostic est cruciale pour confirmer que la segmentation réseau définie à l'étape 2 est opérationnelle. Les résultats observés dans le fichier **Screenshot 2026-05-01 231937_2.png** confirment les points suivants :
 
-*   **Vérification des interfaces :** La commande `ip a` confirme la présence des interfaces `ens33` (NAT) et `ens34` (Host-Only) avec leurs adresses respectives.
-*   **Test de résolution DNS et connectivité :** Un `ping -c 2 google.com` a été exécuté avec succès (0% de perte de paquets), confirmant que la route par défaut via le NAT est opérationnelle.
-
----
-
-## 6. Étape 5 : Création de la Baseline (Snapshot)
-La pérennité de l'environnement est assurée par la création d'un snapshot nommé **CLEAN_BASELINE_TP1**. Comme montré dans les fichiers **"Screenshot 2026-05-01 233059.png"** et **"Screenshot 2026-05-01 233216.png"**, ce point de restauration fige l'état du système après l'importation et la validation du réseau.
-
-Cette étape est critique pour permettre un retour rapide à un état "propre" après toute manipulation invasive lors des futurs audits.
+*   **Attribution IP** : L'interface `ens33` a reçu l'adresse `192.168.18.137` via DHCP sur le segment NAT.
+*   **Connectivité Internet** : Un test de connectivité vers les DNS de Google (`ping -c 2 8.8.8.8`) a été validé avec un temps de réponse moyen de 28.3 ms.
+*   **Résolution de noms (DNS)** : La commande `ping -c 2 google.com` a réussi, confirmant que le fichier `resolv.conf` est correctement configuré.
+*   **Routage** : La table de routage (`ip route`) définit correctement la passerelle `192.168.18.2` pour le trafic externe.
 
 ---
 
-## 7. Étape 6 : Préparation de la Cible Android
-L'outil **Android Debug Bridge (ADB)** est le composant central pour interagir avec la cible. Le fichier **"Screenshot 2026-05-01 234156_2.png"** confirme :
-*   La version d'ADB installée (1.0.39).
-*   Le démarrage réussi du démon ADB sur le port TCP 5037.
+## 5. Création du Snapshot de Référence (Baseline)
+Pour garantir la possibilité de revenir à un état "propre" après des manipulations intrusives, un snapshot a été créé immédiatement après la validation des tests de santé.
 
-L'environnement est désormais prêt pour la connexion d'un périphérique via USB (Passthrough) ou via un émulateur sur le réseau Host-Only.
+Détails du snapshot (visibles dans le fichier **Screenshot 2026-05-01 233216.png**) :
+*   **Nom** : `CLEAN_BASELINE_TP1`.
+*   **Description** : Documente la réussite de l'import, de la configuration réseau (NAT + Host-Only), du boot et de la disponibilité d'ADB.
+
+---
+
+## 6. Configuration de l'Interface ADB (Android Debug Bridge)
+Le pont de débogage Android est l'outil central pour interagir avec la cible (émulateur ou appareil physique). 
+
+D'après le fichier **Screenshot 2026-05-01 234156_2.png**, l'état de l'outil est le suivant :
+*   **Version** : ADB version 1.0.39.
+*   **Emplacement** : `/usr/lib/android-sdk/platform-tools/adb`.
+*   **Statut du démon** : Le serveur ADB a été démarré avec succès sur le port TCP 5037.
+
+---
+
+## Conclusion
+Le Laboratoire 1 est désormais pleinement opérationnel. L'infrastructure Mobexler est correctement segmentée, la connectivité réseau est validée, et un point de restauration système a été établi. L'environnement est prêt pour l'intégration d'une cible Android et le début des analyses de sécurité applicative.
